@@ -13,37 +13,19 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -78,9 +60,8 @@ class MainActivity : ComponentActivity() {
         val prefs = getSharedPreferences("hydra", MODE_PRIVATE)
 
         val today = java.time.LocalDate.now().toString()
-        val savedDate = prefs.getString("date", "")
 
-        if (savedDate != today) {
+        if (prefs.getString("date", "") != today) {
             prefs.edit()
                 .putInt("intake", 0)
                 .putString("date", today)
@@ -90,37 +71,62 @@ class MainActivity : ComponentActivity() {
         setContent {
 
             var darkMode by remember {
-                mutableStateOf(prefs.getBoolean("darkMode", false))
+                mutableStateOf(
+                    prefs.getBoolean("darkMode", false)
+                )
             }
 
             var age by remember {
-                mutableStateOf(prefs.getString("age", "") ?: "")
+                mutableStateOf(
+                    prefs.getString("age", "") ?: ""
+                )
             }
 
             var height by remember {
-                mutableStateOf(prefs.getString("height", "") ?: "")
+                mutableStateOf(
+                    prefs.getString("height", "") ?: ""
+                )
             }
 
             var weight by remember {
-                mutableStateOf(prefs.getString("weight", "") ?: "")
+                mutableStateOf(
+                    prefs.getString("weight", "") ?: ""
+                )
             }
 
             var goal by remember {
-                mutableStateOf(prefs.getInt("goal", 0))
+                mutableStateOf(
+                    prefs.getInt("goal", 0)
+                )
             }
 
             var intake by remember {
-                mutableStateOf(prefs.getInt("intake", 0))
+                mutableStateOf(
+                    prefs.getInt("intake", 0)
+                )
             }
 
-            var interval by remember {
-                mutableStateOf(prefs.getInt("interval", 2))
+            var reminderMinutes by remember {
+                mutableStateOf(
+                    prefs.getInt("reminderMinutes", 60)
+                )
             }
 
             var remindersEnabled by remember {
                 mutableStateOf(
-                    prefs.getBoolean("remindersEnabled", false)
+                    prefs.getBoolean(
+                        "remindersEnabled",
+                        false
+                    )
                 )
+            }
+
+            var customAmount by remember {
+                mutableStateOf("")
+            }
+
+            var customReminder by remember {
+                mutableStateOf("")
             }
 
             var message by remember {
@@ -128,16 +134,16 @@ class MainActivity : ComponentActivity() {
                     if (goal > 0)
                         "Stay hydrated throughout the day."
                     else
-                        "Enter your details to calculate your daily goal."
+                        "Enter your details to calculate your goal."
                 )
             }
 
             MaterialTheme(
                 colorScheme =
                     if (darkMode)
-                        androidx.compose.material3.darkColorScheme()
+                        darkColorScheme()
                     else
-                        androidx.compose.material3.lightColorScheme()
+                        lightColorScheme()
             ) {
 
                 Surface(
@@ -156,25 +162,34 @@ class MainActivity : ComponentActivity() {
                     ) {
 
                         Text(
-                            text = "Hydra",
+                            "Hydra",
                             style =
-                                MaterialTheme.typography.displaySmall,
-                            fontWeight = FontWeight.Bold
+                                MaterialTheme.typography
+                                    .displaySmall,
+                            fontWeight =
+                                FontWeight.Bold
                         )
 
                         Text(
-                            text =
-                                "Your personal water reminder",
+                            "Your personal water reminder",
                             style =
-                                MaterialTheme.typography.titleMedium
+                                MaterialTheme.typography
+                                    .titleMedium
                         )
 
                         if (goal > 0) {
 
-                            val progress =
+                            val targetProgress =
                                 (intake.toFloat() /
-                                        goal.toFloat())
+                                    goal.toFloat())
                                     .coerceIn(0f, 1f)
+
+                            val animatedProgress by
+                                animateFloatAsState(
+                                    targetValue =
+                                        targetProgress,
+                                    label = "waterLevel"
+                                )
 
                             val remaining =
                                 (goal - intake)
@@ -184,11 +199,7 @@ class MainActivity : ComponentActivity() {
                                 modifier =
                                     Modifier.fillMaxWidth(),
                                 shape =
-                                    RoundedCornerShape(24.dp),
-                                elevation =
-                                    CardDefaults.cardElevation(
-                                        defaultElevation = 4.dp
-                                    )
+                                    RoundedCornerShape(24.dp)
                             ) {
 
                                 Column(
@@ -203,7 +214,8 @@ class MainActivity : ComponentActivity() {
                                     Text(
                                         "Today's hydration",
                                         style =
-                                            MaterialTheme.typography
+                                            MaterialTheme
+                                                .typography
                                                 .titleLarge,
                                         fontWeight =
                                             FontWeight.Bold
@@ -213,24 +225,49 @@ class MainActivity : ComponentActivity() {
                                         Modifier.height(16.dp)
                                     )
 
+                                    /*
+                                     * Animated glass.
+                                     * The inner water container grows
+                                     * according to the daily progress.
+                                     */
                                     Box(
                                         modifier =
                                             Modifier
-                                                .height(190.dp)
-                                                .fillMaxWidth(),
+                                                .width(150.dp)
+                                                .height(210.dp)
+                                                .border(
+                                                    BorderStroke(
+                                                        4.dp,
+                                                        MaterialTheme
+                                                            .colorScheme
+                                                            .primary
+                                                    ),
+                                                    RoundedCornerShape(
+                                                        28.dp
+                                                    )
+                                                )
+                                                .clip(
+                                                    RoundedCornerShape(
+                                                        28.dp
+                                                    )
+                                                ),
                                         contentAlignment =
-                                            Alignment.Center
+                                            Alignment.BottomCenter
                                     ) {
 
-                                        CircularProgressIndicator(
-                                            progress = {
-                                                progress
-                                            },
+                                        Box(
                                             modifier =
                                                 Modifier
-                                                    .fillMaxSize()
-                                                    .padding(10.dp),
-                                            strokeWidth = 14.dp
+                                                    .fillMaxWidth()
+                                                    .fillMaxHeight(
+                                                        animatedProgress
+                                                    )
+                                                    .clip(
+                                                        RoundedCornerShape(
+                                                            topStart = 20.dp,
+                                                            topEnd = 20.dp
+                                                        )
+                                                    )
                                         )
 
                                         Column(
@@ -239,8 +276,9 @@ class MainActivity : ComponentActivity() {
                                         ) {
 
                                             Text(
-                                                "${(progress * 100)
-                                                    .roundToInt()}%",
+                                                "${(
+                                                    targetProgress * 100
+                                                ).roundToInt()}%",
                                                 style =
                                                     MaterialTheme
                                                         .typography
@@ -251,29 +289,26 @@ class MainActivity : ComponentActivity() {
 
                                             Text(
                                                 "$intake ml",
-                                                style =
-                                                    MaterialTheme
-                                                        .typography
-                                                        .titleMedium
+                                                fontWeight =
+                                                    FontWeight.Medium
                                             )
                                         }
                                     }
 
+                                    Spacer(
+                                        Modifier.height(14.dp)
+                                    )
+
                                     Text(
                                         "$remaining ml remaining",
                                         style =
-                                            MaterialTheme.typography
+                                            MaterialTheme
+                                                .typography
                                                 .titleMedium
                                     )
 
-                                    Spacer(
-                                        Modifier.height(10.dp)
-                                    )
-
                                     Text(
-                                        "Daily goal: $goal ml",
-                                        fontWeight =
-                                            FontWeight.Medium
+                                        "Daily goal: $goal ml"
                                     )
                                 }
                             }
@@ -288,8 +323,9 @@ class MainActivity : ComponentActivity() {
                                 Button(
                                     onClick = {
                                         intake =
-                                            (intake + 250)
-                                                .coerceAtMost(goal)
+                                            (
+                                                intake + 250
+                                            ).coerceAtMost(goal)
 
                                         prefs.edit()
                                             .putInt(
@@ -307,8 +343,9 @@ class MainActivity : ComponentActivity() {
                                 Button(
                                     onClick = {
                                         intake =
-                                            (intake + 500)
-                                                .coerceAtMost(goal)
+                                            (
+                                                intake + 500
+                                            ).coerceAtMost(goal)
 
                                         prefs.edit()
                                             .putInt(
@@ -324,12 +361,103 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
 
+                            Card(
+                                modifier =
+                                    Modifier.fillMaxWidth(),
+                                shape =
+                                    RoundedCornerShape(20.dp)
+                            ) {
+
+                                Column(
+                                    modifier =
+                                        Modifier.padding(18.dp),
+                                    verticalArrangement =
+                                        Arrangement.spacedBy(10.dp)
+                                ) {
+
+                                    Text(
+                                        "Custom water amount",
+                                        style =
+                                            MaterialTheme
+                                                .typography
+                                                .titleLarge,
+                                        fontWeight =
+                                            FontWeight.Bold
+                                    )
+
+                                    OutlinedTextField(
+                                        value =
+                                            customAmount,
+                                        onValueChange = {
+                                            customAmount = it
+                                        },
+                                        label = {
+                                            Text(
+                                                "Amount in ml"
+                                            )
+                                        },
+                                        keyboardOptions =
+                                            KeyboardOptions(
+                                                keyboardType =
+                                                    KeyboardType.Number
+                                            ),
+                                        modifier =
+                                            Modifier.fillMaxWidth()
+                                    )
+
+                                    Button(
+                                        onClick = {
+
+                                            val amount =
+                                                customAmount
+                                                    .toIntOrNull()
+
+                                            if (
+                                                amount != null &&
+                                                amount > 0
+                                            ) {
+
+                                                intake =
+                                                    (
+                                                        intake +
+                                                            amount
+                                                    ).coerceAtMost(
+                                                        goal
+                                                    )
+
+                                                prefs.edit()
+                                                    .putInt(
+                                                        "intake",
+                                                        intake
+                                                    )
+                                                    .apply()
+
+                                                customAmount = ""
+
+                                            } else {
+
+                                                message =
+                                                    "Enter a valid water amount."
+                                            }
+                                        },
+                                        modifier =
+                                            Modifier.fillMaxWidth()
+                                    ) {
+                                        Text("Add Water")
+                                    }
+                                }
+                            }
+
                             OutlinedButton(
                                 onClick = {
+
                                     intake = 0
 
                                     prefs.edit()
-                                        .putInt("intake", 0)
+                                        .putInt(
+                                            "intake",
+                                            0
+                                        )
                                         .apply()
                                 },
                                 modifier =
@@ -347,20 +475,19 @@ class MainActivity : ComponentActivity() {
 
                                 Column(
                                     modifier =
-                                        Modifier.padding(18.dp)
+                                        Modifier.padding(18.dp),
+                                    verticalArrangement =
+                                        Arrangement.spacedBy(10.dp)
                                 ) {
 
                                     Text(
                                         "Water reminders",
                                         style =
-                                            MaterialTheme.typography
+                                            MaterialTheme
+                                                .typography
                                                 .titleLarge,
                                         fontWeight =
                                             FontWeight.Bold
-                                    )
-
-                                    Spacer(
-                                        Modifier.height(10.dp)
                                     )
 
                                     Row(
@@ -378,20 +505,20 @@ class MainActivity : ComponentActivity() {
                                         ) {
 
                                             Text(
-                                                if (remindersEnabled)
+                                                if (
+                                                    remindersEnabled
+                                                )
                                                     "Reminders ON"
                                                 else
                                                     "Reminders OFF",
                                                 fontWeight =
-                                                    FontWeight.Medium
+                                                    FontWeight.Bold
                                             )
 
                                             Text(
-                                                "Every $interval hour" +
-                                                    if (interval == 1)
-                                                        ""
-                                                    else
-                                                        "s",
+                                                reminderText(
+                                                    reminderMinutes
+                                                ),
                                                 style =
                                                     MaterialTheme
                                                         .typography
@@ -402,7 +529,8 @@ class MainActivity : ComponentActivity() {
                                         Switch(
                                             checked =
                                                 remindersEnabled,
-                                            onCheckedChange = { enabled ->
+                                            onCheckedChange = {
+                                                enabled ->
 
                                                 remindersEnabled =
                                                     enabled
@@ -415,11 +543,14 @@ class MainActivity : ComponentActivity() {
                                                     .apply()
 
                                                 if (enabled) {
+
                                                     scheduleReminder(
                                                         this@MainActivity,
-                                                        interval
+                                                        reminderMinutes
                                                     )
+
                                                 } else {
+
                                                     cancelReminder(
                                                         this@MainActivity
                                                     )
@@ -428,63 +559,163 @@ class MainActivity : ComponentActivity() {
                                         )
                                     }
 
-                                    Spacer(
-                                        Modifier.height(12.dp)
-                                    )
-
                                     Text(
-                                        "Reminder interval"
+                                        "Quick intervals"
                                     )
 
-                                    Spacer(
-                                        Modifier.height(8.dp)
-                                    )
+                                    val quickIntervals =
+                                        listOf(
+                                            10,
+                                            15,
+                                            20,
+                                            30,
+                                            45,
+                                            60,
+                                            120,
+                                            180,
+                                            240
+                                        )
 
-                                    Row(
-                                        modifier =
-                                            Modifier.fillMaxWidth(),
-                                        horizontalArrangement =
-                                            Arrangement.spacedBy(8.dp)
-                                    ) {
+                                    quickIntervals
+                                        .chunked(3)
+                                        .forEach { row ->
 
-                                        for (hours in 1..4) {
+                                            Row(
+                                                modifier =
+                                                    Modifier.fillMaxWidth(),
+                                                horizontalArrangement =
+                                                    Arrangement.spacedBy(
+                                                        8.dp
+                                                    )
+                                            ) {
 
-                                            OutlinedButton(
-                                                onClick = {
+                                                row.forEach { minutes ->
 
-                                                    interval =
-                                                        hours
+                                                    OutlinedButton(
+                                                        onClick = {
 
-                                                    prefs.edit()
-                                                        .putInt(
-                                                            "interval",
-                                                            hours
-                                                        )
-                                                        .apply()
+                                                            reminderMinutes =
+                                                                minutes
 
-                                                    if (remindersEnabled) {
-                                                        scheduleReminder(
-                                                            this@MainActivity,
-                                                            hours
+                                                            prefs.edit()
+                                                                .putInt(
+                                                                    "reminderMinutes",
+                                                                    minutes
+                                                                )
+                                                                .apply()
+
+                                                            if (
+                                                                remindersEnabled
+                                                            ) {
+                                                                scheduleReminder(
+                                                                    this@MainActivity,
+                                                                    minutes
+                                                                )
+                                                            }
+                                                        },
+                                                        modifier =
+                                                            Modifier.weight(
+                                                                1f
+                                                            )
+                                                    ) {
+                                                        Text(
+                                                            reminderShortText(
+                                                                minutes
+                                                            )
                                                         )
                                                     }
-                                                },
-                                                modifier =
-                                                    Modifier.weight(1f)
-                                            ) {
-                                                Text("${hours}h")
+                                                }
+
+                                                repeat(
+                                                    3 - row.size
+                                                ) {
+                                                    Spacer(
+                                                        Modifier.weight(
+                                                            1f
+                                                        )
+                                                    )
+                                                }
                                             }
                                         }
-                                    }
 
                                     Spacer(
-                                        Modifier.height(8.dp)
+                                        Modifier.height(4.dp)
                                     )
 
                                     Text(
-                                        "Android battery saving may delay reminders.",
+                                        "Custom interval"
+                                    )
+
+                                    OutlinedTextField(
+                                        value =
+                                            customReminder,
+                                        onValueChange = {
+                                            customReminder = it
+                                        },
+                                        label = {
+                                            Text(
+                                                "Minutes (minimum 10)"
+                                            )
+                                        },
+                                        keyboardOptions =
+                                            KeyboardOptions(
+                                                keyboardType =
+                                                    KeyboardType.Number
+                                            ),
+                                        modifier =
+                                            Modifier.fillMaxWidth()
+                                    )
+
+                                    Button(
+                                        onClick = {
+
+                                            val minutes =
+                                                customReminder
+                                                    .toIntOrNull()
+
+                                            if (
+                                                minutes != null &&
+                                                minutes >= 10
+                                            ) {
+
+                                                reminderMinutes =
+                                                    minutes
+
+                                                prefs.edit()
+                                                    .putInt(
+                                                        "reminderMinutes",
+                                                        minutes
+                                                    )
+                                                    .apply()
+
+                                                if (
+                                                    remindersEnabled
+                                                ) {
+                                                    scheduleReminder(
+                                                        this@MainActivity,
+                                                        minutes
+                                                    )
+                                                }
+
+                                                customReminder = ""
+
+                                            } else {
+
+                                                message =
+                                                    "Custom reminder must be at least 10 minutes."
+                                            }
+                                        },
+                                        modifier =
+                                            Modifier.fillMaxWidth()
+                                    ) {
+                                        Text("Set Custom Reminder")
+                                    }
+
+                                    Text(
+                                        "Minimum interval: 10 minutes. Android battery saving may delay notifications.",
                                         style =
-                                            MaterialTheme.typography
+                                            MaterialTheme
+                                                .typography
                                                 .bodySmall
                                     )
                                 }
@@ -508,7 +739,8 @@ class MainActivity : ComponentActivity() {
                                 Text(
                                     "Your details",
                                     style =
-                                        MaterialTheme.typography
+                                        MaterialTheme
+                                            .typography
                                             .titleLarge,
                                     fontWeight =
                                         FontWeight.Bold
@@ -600,38 +832,23 @@ class MainActivity : ComponentActivity() {
                                         ) {
 
                                             message =
-                                                "Please enter an age between 1 and 120."
+                                                "Age must be between 1 and 120."
 
                                         } else if (
                                             h !in 50.0..250.0
                                         ) {
 
                                             message =
-                                                "Please enter a height between 50 and 250 cm."
+                                                "Height must be between 50 and 250 cm."
 
                                         } else if (
                                             w !in 10.0..300.0
                                         ) {
 
                                             message =
-                                                "Please enter a weight between 10 and 300 kg."
+                                                "Weight must be between 10 and 300 kg."
 
                                         } else {
-
-                                            /*
-                                             * General wellness estimate.
-                                             *
-                                             * Base:
-                                             * 30 ml per kg
-                                             *
-                                             * Height adjustment:
-                                             * Higher height slightly increases
-                                             * the estimate.
-                                             *
-                                             * Age adjustment:
-                                             * Adults 65+ receive a small
-                                             * reduction.
-                                             */
 
                                             val base =
                                                 w * 30.0
@@ -645,28 +862,23 @@ class MainActivity : ComponentActivity() {
 
                                             val ageAdjustment =
                                                 when {
-                                                    a < 18 -> 0
                                                     a >= 65 -> -100
                                                     else -> 0
                                                 }
 
-                                            val calculated =
+                                            goal =
                                                 (
                                                     base +
                                                         heightAdjustment +
                                                         ageAdjustment
-                                                    )
+                                                )
                                                     .roundToInt()
                                                     .coerceIn(
                                                         1000,
                                                         5000
                                                     )
 
-                                            goal =
-                                                calculated
-
-                                            intake =
-                                                0
+                                            intake = 0
 
                                             prefs.edit()
                                                 .putString(
@@ -730,14 +942,11 @@ class MainActivity : ComponentActivity() {
                                 Text(
                                     "Appearance",
                                     style =
-                                        MaterialTheme.typography
+                                        MaterialTheme
+                                            .typography
                                             .titleLarge,
                                     fontWeight =
                                         FontWeight.Bold
-                                )
-
-                                Spacer(
-                                    Modifier.height(8.dp)
                                 )
 
                                 Row(
@@ -794,22 +1003,12 @@ class MainActivity : ComponentActivity() {
                                     Text("Dark")
                                 }
 
-                                HorizontalDivider(
-                                    modifier =
-                                        Modifier.padding(
-                                            vertical = 8.dp
-                                        )
+                                Spacer(
+                                    Modifier.height(8.dp)
                                 )
 
                                 Text(
-                                    "Hydra v1.2",
-                                    style =
-                                        MaterialTheme.typography
-                                            .bodySmall
-                                )
-
-                                Text(
-                                    "Drink water, stay hydrated.",
+                                    "Hydra v1.3",
                                     style =
                                         MaterialTheme.typography
                                             .bodySmall
@@ -817,12 +1016,8 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
-                        Spacer(
-                            Modifier.height(4.dp)
-                        )
-
                         Text(
-                            "Hydra • Your personal water reminder",
+                            "Hydra • Drink water, stay hydrated.",
                             style =
                                 MaterialTheme.typography.bodySmall,
                             textAlign =
@@ -833,6 +1028,27 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+        }
+    }
+
+    private fun reminderText(minutes: Int): String {
+
+        return if (minutes < 60) {
+            "Every $minutes minutes"
+        } else if (minutes % 60 == 0) {
+            "Every ${minutes / 60} hour" +
+                if (minutes / 60 == 1) "" else "s"
+        } else {
+            "Every ${minutes / 60}h ${minutes % 60}m"
+        }
+    }
+
+    private fun reminderShortText(minutes: Int): String {
+
+        return if (minutes < 60) {
+            "${minutes}m"
+        } else {
+            "${minutes / 60}h"
         }
     }
 
@@ -868,7 +1084,7 @@ class MainActivity : ComponentActivity() {
 
         private fun scheduleReminder(
             context: Context,
-            hours: Int
+            minutes: Int
         ) {
 
             val alarmManager =
@@ -891,12 +1107,12 @@ class MainActivity : ComponentActivity() {
                         PendingIntent.FLAG_IMMUTABLE
                 )
 
-            alarmManager.cancel(
-                pendingIntent
-            )
+            alarmManager.cancel(pendingIntent)
 
             val intervalMillis =
-                hours * 60L * 60L * 1000L
+                minutes.toLong() *
+                    60L *
+                    1000L
 
             alarmManager.setInexactRepeating(
                 AlarmManager.RTC_WAKEUP,
@@ -931,9 +1147,7 @@ class MainActivity : ComponentActivity() {
                         PendingIntent.FLAG_IMMUTABLE
                 )
 
-            alarmManager.cancel(
-                pendingIntent
-            )
+            alarmManager.cancel(pendingIntent)
         }
     }
 }
